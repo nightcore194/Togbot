@@ -20,7 +20,7 @@ login_view = Blueprint('login', __name__, url_prefix='/login')
 mail = Mail()
 
 
-@login_view.route('/login', methods=['GET', 'POST'])
+@login_view.route('/login', methods=['POST'])
 async def login() -> Response | str:
     if current_user.is_authenticated:
         return redirect('/')
@@ -33,27 +33,21 @@ async def login() -> Response | str:
 
         if not user or not check_password_hash(user.password, password):  # check password hashes
             flash('Неверное имя пользователя или пароль', "error")
-            return redirect(url_for('login_view.login'))
+            return redirect('/app/login')
         else:
             login_user(user, remember=remember)  # login user
             return redirect('/')
-    return render_template('login.html')
+    return redirect('/app')
 
 
-@login_view.route('/logout')
+@login_view.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return redirect('/app/login')
 
 
-@login_view.route('/')
-@login_required
-def index():
-    return render_template('index.html')
-
-
-@login_view.route('/signup', methods=['GET', 'POST'])
+@login_view.route('/signup', methods=['POST'])
 async def signup() -> Response | str:  # basic sing up function
     config = os.environ
     if request.method == 'POST':
@@ -83,8 +77,8 @@ async def signup() -> Response | str:  # basic sing up function
         )
         mail.send(msg)
 
-        return redirect(url_for('login_view.login'))
-    return render_template('signup.html', authorized=current_user.is_authenticated)
+        return redirect('/app/login')
+    return redirect('/app')
 
 
 @login_view.route("/confirm", methods=["POST"])
