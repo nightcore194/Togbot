@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Voice Channel</title>
+</head>
+<body>
+    <h1>Voice Channel</h1>
+    <a href="{{ url_for('logout') }}">Logout</a>
+    <button id="start">Start Call</button>
+    <audio id="audio" autoplay></audio>
+    <script>
+        const startButton = document.getElementById('start');
+        const audioElement = document.getElementById('audio');
+        let pc;
+
+        startButton.onclick = async () => {
+            pc = new RTCPeerConnection();
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+            pc.ontrack = event => {
+                const audioStream = event.streams[0];
+                audioElement.srcObject = audioStream;
+            };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            const response = await fetch('/offer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sdp: offer.sdp, type: offer.type })
+            });
+
+            const answer = await response.json();
+            await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        };
+    </script>
+</body>
+</html>
