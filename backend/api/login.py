@@ -53,7 +53,8 @@ async def signup() -> Response | str:  # basic sing up function
     if request.method == 'POST':
         email = request.form.get('email')
         username = request.form.get('username')
-        name = request.form.get('name')
+        display_name = request.form.get('display_name')
+        birthday = request.form.get('birthday')
         password = request.form.get('password')
         async with db_session() as db:
             user = await db.query(User).filter_by(
@@ -63,6 +64,8 @@ async def signup() -> Response | str:  # basic sing up function
             return redirect(url_for('admin_view.signup'))
         # create a db cortege if user isnt exists
         new_user = User(email=email,
+                        display_name=display_name,
+                        birthday=datetime.strptime(birthday, "%Y-%m-%d"),
                         username=username,
                         password=generate_password_hash(password, method='pbkdf2:sha256'))
         await db.add(new_user)
