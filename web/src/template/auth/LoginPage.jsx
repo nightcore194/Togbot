@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 export default function Login(){
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5000/login', {
-                username,
+            const response = await axios.post('/auth/login', {
+                email,
                 password,
             });
             setMessage(response.data.message);
@@ -24,8 +24,8 @@ export default function Login(){
         <div>
             <h1>Login</h1>
             <form onSubmit={handleSubmit}>
-                <label htmlFor="username">Username:</label>
-                <input type="text" name="username" value={username} onChange={(e) => setUsername(e.target.value)} required/>
+                <label htmlFor="username">Email:</label>
+                <input type="email" name="username" value={username} onChange={(e) => setUsername(e.target.value)} required/>
                 <br />
                 <label htmlFor="password">Password:</label>
                 <input type="password" name="password" value={password} onChange={(e) => setPassword(e.target.value)} required/>
@@ -39,4 +39,4 @@ export default function Login(){
             )}
         </div>
     );
-};
+}

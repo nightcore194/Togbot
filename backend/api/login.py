@@ -14,7 +14,7 @@ from backend.models.models import User
 from backend.settings.settings import ENV_FILE
 
 load_dotenv(ENV_FILE)
-login_view = Blueprint('login', __name__, url_prefix='/login')
+login_view = Blueprint('login', __name__, url_prefix='/auth')
 
 # Setting up mail-server
 mail = Mail()
@@ -40,48 +40,52 @@ async def login() -> Response | str:
     return redirect('/app')
 
 
-@login_view.route('/logout', methods=['POST'])
+@login_view.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect('/app/login')
 
 
+@login.route('/check_authorization', methods=['GET'])
+@login_required
+def check_authorization():
+    return jsonify({'authorized': True, 'user': current_user.id}), 200
+
+
 @login_view.route('/signup', methods=['POST'])
 async def signup() -> Response | str:  # basic sing up function
     config = os.environ
-    if request.method == 'POST':
-        email = request.form.get('email')
-        username = request.form.get('username')
-        display_name = request.form.get('display_name')
-        birthday = request.form.get('birthday')
-        password = request.form.get('password')
-        async with db_session() as db:
-            user = await db.query(User).filter_by(
-                email=email).first()
-        if user:  # check for user exist
-            flash('Email address already exists', "error")
-            return redirect(url_for('admin_view.signup'))
-        # create a db cortege if user isnt exists
-        new_user = User(email=email,
-                        display_name=display_name,
-                        birthday=datetime.strptime(birthday, "%Y-%m-%d"),
-                        username=username,
-                        password=generate_password_hash(password, method='pbkdf2:sha256'))
-        await db.add(new_user)
-        await db.commit()
-        token = generate_token(email)
-        html = render_template("confirm.html", confirm_url=f'{config["BASE_URL"]}/confirm?token={token}')
-        msg = Message(
+    email = request.form.get('email')
+    username = request.form.get('username')
+    display_name = request.form.get('display_name')
+    birthday = request.form.get('birthday')
+    password = request.form.get('password')
+    async with db_session() as db:
+        user = await db.query(User).filter_by(
+            email=email).first()
+    if user:  # check for user exist
+        flash('Email address already exists', "error")
+        return redirect('/login')
+    # create a db cortege if user isnt exists
+    new_user = User(email=email,
+                    display_name=display_name,
+                    birthday=datetime.strptime(birthday, "%Y-%m-%d"),
+                    username=username,
+                    password=generate_password_hash(password, method='pbkdf2:sha256'))
+    await db.add(new_user)
+    await db.commit()
+    token = generate_token(email)
+    html = render_template("confirm.html", confirm_url=f'{config["BASE_URL"]}/confirm?token={token}')
+    msg = Message(
             "Confirm your email address!",
             recipients=[email],
             html=html,
             sender=config["MAIL_DEFAULT_SENDER"],
-        )
-        mail.send(msg)
-
-        return redirect('/app/login')
-    return redirect('/app')
+    )
+    mail.send(msg)
+    flash("Check your e-mail and confirm your registration!", "success")
+    return redirect('/app/login')
 
 
 @login_view.route("/confirm", methods=["POST"])
