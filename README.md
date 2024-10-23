@@ -50,3 +50,5 @@
     <li>Until 28.02.2025 - create admin panel for moderation of content, adding functional of webcam chatting</li>
     <li>Until 30.04.2025 - add function of streaming, presenting this project to users.</li>
 </ol>
+<h1>Design</h1>
+<p>Design is located <a href="https://www.figma.com/design/TBTNFIJjPM0nmfWyBOHwJX/Togbot-design?node-id=0-1&t=thmql8I7pgXeYDzS-1">here</a></p>
