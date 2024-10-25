@@ -47,7 +47,7 @@ def logout():
     return redirect('/app/login')
 
 
-@login.route('/check_authorization', methods=['GET'])
+@login_view.route('/check_authorization', methods=['GET'])
 @login_required
 def check_authorization():
     return jsonify({'authorized': True, 'user': current_user.id}), 200

@@ -10,7 +10,7 @@ from backend.settings.settings import ENV_FILE
 load_dotenv(ENV_FILE)
 config = os.environ
 
-DB_URL = (f'{config["DB_DRIVER"]}+asyncpg://{config["DB_USER"]}:{config["DB_PASSWORD"]}'
+DB_URL = (f'{config["DB_DRIVER"]}://{config["DB_USER"]}:{config["DB_PASSWORD"]}'
           f'@{config["DB_HOST"]}:{config["DB_PORT"]}/{config["DB_SCHEMA"]}')
 # Create the asynchronous engine
 engine = create_async_engine(DB_URL, pool_pre_ping=True, pool_recycle=3600, max_overflow=30, pool_size=20,

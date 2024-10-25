@@ -37,6 +37,8 @@ class Session(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     hash: Mapped[str] = mapped_column(String(256), nullable=False)
     expires: Mapped[int] = mapped_column(Integer, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=True)
+
 
 
 class Server(Base):
