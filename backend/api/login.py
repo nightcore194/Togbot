@@ -9,9 +9,9 @@ from itsdangerous import URLSafeTimedSerializer
 from werkzeug import Response
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from backend.models.engine import db_session
-from backend.models.models import User
-from backend.settings.settings import ENV_FILE
+from models.engine import db_session
+from models.models import User
+from settings.settings import ENV_FILE
 
 load_dotenv(ENV_FILE)
 login_view = Blueprint('login', __name__, url_prefix='/auth')

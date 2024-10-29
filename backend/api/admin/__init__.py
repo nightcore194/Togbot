@@ -1,8 +1,8 @@
 from flask import Flask
 from flask_admin import Admin
 
-from backend.models.engine import db_session
-from backend.api.admin.view import *
+from models.engine import db_session
+from api.admin.view import *
 
 
 async def admin_panel_init(app: Flask):  # initing admin_panel panel view

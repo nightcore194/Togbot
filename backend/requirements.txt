@@ -3,6 +3,7 @@ flask[async]~=3.0.3
 aiortc~=1.9.0
 sqlalchemy~=2.0.30
 sqlalchemy[asyncio]~=2.0.30
+aiomysql~=0.2.0
 flask-login~=0.6.3
 flask-admin~=1.6.1
 alembic~=1.13.1

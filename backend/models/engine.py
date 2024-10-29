@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from contextlib import asynccontextmanager
 
-from backend.settings.settings import ENV_FILE
+from settings.settings import ENV_FILE
 
 load_dotenv(ENV_FILE)
 config = os.environ

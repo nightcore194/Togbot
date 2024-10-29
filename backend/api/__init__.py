@@ -5,10 +5,10 @@ import sys
 from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
-from backend.api.admin import admin_panel_init
-from backend.models.engine import db_session
-from backend.models.models import User
-from backend.settings.settings import BACKEND_DIR, ENV_FILE
+from api.admin import admin_panel_init
+from models.engine import db_session
+from models.models import User
+from settings.settings import BACKEND_DIR, ENV_FILE
 
 
 async def create_app():
@@ -29,9 +29,9 @@ async def create_app():
     )
 
     # Register blueprints
-    from backend.api.login import login_view
-    from backend.api.voice import voice_view
-    from backend.api.view import api_view
+    from api.login import login_view
+    from api.voice import voice_view
+    from api.view import api_view
     app.register_blueprint(login_view)
     app.register_blueprint(voice_view)
     app.register_blueprint(api_view)
@@ -44,7 +44,7 @@ async def create_app():
     await admin_panel_init(app)
 
     # Setting up mail-server
-    from backend.api.login import mail
+    from api.login import mail
     mail.init_app(app)
 
     @login_manager.user_loader

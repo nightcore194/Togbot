@@ -2,8 +2,8 @@ from flask import Response, Request, Blueprint, request, jsonify, make_response
 from flask_login import login_required, current_user
 from sqlalchemy import inspect
 
-from backend.models.engine import db_session
-from backend.models.models import *
+from models.engine import db_session
+from models.models import *
 
 import logging
 

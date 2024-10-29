@@ -1,6 +1,6 @@
 import asyncio
 
-from backend.api import create_app
+from api import create_app
 
 
 async def run_app():
