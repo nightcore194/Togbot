@@ -1,6 +1,6 @@
 from flask import Response, Request, Blueprint, request, jsonify, make_response
 from flask_login import login_required, current_user
-from sqlalchemy import inspect
+from sqlalchemy import inspect, select
 
 from models.engine import db_session
 from models.models import *
@@ -14,10 +14,10 @@ api_view = Blueprint('api', __name__, url_prefix="/api")
 @login_required
 async def get_obj(path: str) -> Response:
     model = eval(path)
-    with (db_session() as db):
+    async with db_session() as db:
         try:
             tables = [model]
-            objs = db.query(model)
+            query = select(model)
             """for rel in inspect(model).relationships:
                                        if rel.secondary is not None and rel.backref is not None:
                                            tables.append(rel.mapper.class_)
@@ -31,11 +31,13 @@ async def get_obj(path: str) -> Response:
                     if hasattr(table, key):
                         attr = getattr(table, key)
                         value = None if value in ("None", "null", "") else value
-                        objs = objs.filter(attr == attr.type.python_type(value)) if positive else objs.filter(
+                        query = query.filter(attr == attr.type.python_type(value)) if positive else query.filter(
                                 attr != value)
             limit = request.args.get("limit") if "limit" in request.args.keys() else 50
             offset = request.args.get("offset") if "offset" in request.args.keys() else 0
-            objs = objs.limit(limit).offset(offset).all()
+            query = query.limit(limit).offset(offset)
+            objs = await db.execute(query)
+            objs = objs.scalars().all()
             node = {"result": [obj.to_dict() for obj in objs]}
             node['result'] = sorted(node['result'], key=lambda it: it[inspect(model).primary_key[0].name])
             response = jsonify(node)

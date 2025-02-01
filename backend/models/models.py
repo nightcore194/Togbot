@@ -25,15 +25,25 @@ class User(Base, UserMixin):
     second_name: Mapped[str] = mapped_column(String(64), nullable=True)
     display_name: Mapped[str] = mapped_column(String(128), nullable=True)
     password: Mapped[str] = mapped_column(String(128), nullable=False)
-    profile_photo_url: Mapped[str] = mapped_column(String(256), nullable=False)
-    background_photo_url: Mapped[str] = mapped_column(String(256), nullable=False)
-    about_user: Mapped[str] = mapped_column(Text, nullable=True)
+    profile_photo: Mapped[str] = mapped_column(String(256), nullable=False)
+    profile_photo_preview: Mapped[str] = mapped_column(String(256), nullable=False)
+    background_photo: Mapped[str] = mapped_column(String(256), nullable=False)
+    about: Mapped[str] = mapped_column(Text, nullable=True)
     phone: Mapped[str] = mapped_column(String(16), nullable=True)
     city: Mapped[str] = mapped_column(String(64), nullable=True)
     birthday: Mapped[datetime.date] = mapped_column(Date, nullable=False)
     creation_date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, default=datetime.datetime.now())
     is_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    servers: Mapped[List["Server"]] = relationship("Server", backref="User", secondary="Server_User", )
+    is_2fa_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    otp: Mapped["TwoFactorAuthentication"] = relationship("TwoFactorAuthentification", backref="User")
+    servers: Mapped[List["Server"]] = relationship("Server", backref="User", secondary="ServerUser", )
+
+
+class TwoFactorAuthentication(Base):
+    __tablename__ = "TwoFactorAuthentication"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    secret_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("User.id", onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
 
 
 class Session(Base):
@@ -45,7 +55,7 @@ class Session(Base):
     hash: Mapped[str] = mapped_column(String(256), nullable=False)
     expires: Mapped[int] = mapped_column(Integer, nullable=True)
     creation_date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, default=datetime.datetime.now())
-    user_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("User.id", ondelete='CASCADE'), nullable=True)
 
 
 class Server(Base):
@@ -60,16 +70,15 @@ class Server(Base):
     photo_url: Mapped[str] = mapped_column(String(512), nullable=True)
     users: Mapped[List["User"]] = relationship("User",
                                                backref="Server",
-                                               secondary="Server_User",
+                                               secondary="ServerUser",
                                                order_by="User.id")
     role: Mapped[List["Role"]] = relationship("Role", backref="Server")
     category: Mapped["Category"] = relationship("Category", backref="Server")
     channel: Mapped[List["Channel"]] = relationship("Channel", backref="Server")
-    emoji_pack: Mapped["EmojiPack"] = relationship("EmojiPack", backref="Server")
 
 
-class Server_User(Base):
-    __tablename__ = "Server_User"
+class ServerUser(Base):
+    __tablename__ = "ServerUser"
 
     serialize_only = ()
 
@@ -86,7 +95,7 @@ class Category(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     creation_date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, default=datetime.datetime.now())
     name: Mapped[str] = mapped_column(String(256), nullable=False)
-    server_id: Mapped[str] = mapped_column(ForeignKey("Server.id"), nullable=True)
+    server_id: Mapped[str] = mapped_column(ForeignKey("Server.id", ondelete='CASCADE', onupdate='CASCADE'), nullable=True)
     channels: Mapped[List["Channel"]] = relationship("Channel", backref="Category", order_by="Channel.id")
 
 
@@ -99,8 +108,8 @@ class Channel(Base):
     creation_date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, default=datetime.datetime.now())
     name: Mapped[str] = mapped_column(String(256), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
-    server_id: Mapped[int] = mapped_column(ForeignKey("Server.id"), nullable=True)
-    type_id: Mapped[int] = mapped_column(ForeignKey("Type.id"), nullable=False)
+    server_id: Mapped[int] = mapped_column(ForeignKey("Server.id", ondelete='CASCADE', onupdate='CASCADE'), nullable=True)
+    type_id: Mapped[int] = mapped_column(ForeignKey("Type.id", ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
     type: Mapped["Type"] = relationship("Type", backref="Channel")
     server: Mapped["Server"] = relationship("Server", backref="Channel")
     messages: Mapped[List["Message"]] = relationship("Message", backref="Channel")
@@ -131,11 +140,11 @@ class Role(Base):
     server_id: Mapped[int] = mapped_column(ForeignKey("Server.id"), nullable=False)
     server: Mapped["Server"] = relationship("Server", backref="Role")
     permissions: Mapped[List["Permission"]] = relationship("Permission", backref="Role", order_by="Permission.id")
-    users: Mapped[List["User"]] = relationship("User", backref="Role", secondary="Role_User")
+    users: Mapped[List["User"]] = relationship("User", backref="Role", secondary="RoleUser")
 
 
-class Role_User(Base):
-    __tablename__ = "Role_User"
+class RoleUser(Base):
+    __tablename__ = "RoleUser"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("User.id", ondelete='CASCADE'), nullable=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("Role.id", ondelete='CASCADE'), nullable=True)
@@ -147,7 +156,7 @@ class Permission(Base):
     serialize_only = ()
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("Role.id"), nullable=False)
+    role_id: Mapped[int] = mapped_column(ForeignKey("Role.id", ondelete='CASCADE'), nullable=False)
     role: Mapped["Role"] = relationship("Role", backref="Permission")
     can_view_channels: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     can_edit_channels: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -184,8 +193,8 @@ class Message(Base):
     edit_date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, default=datetime.datetime.now())
     content: Mapped[str] = mapped_column(Text, nullable=False)
     is_edited: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=False)
-    server_id: Mapped[int] = mapped_column(ForeignKey("Server.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("User.id", ondelete='SET NULL'), nullable=True)
+    server_id: Mapped[int] = mapped_column(ForeignKey("Server.id", ondelete='CASCADE'), nullable=False)
     server: Mapped["Server"] = relationship("Server", backref="Message")
     from_user: Mapped["User"] = relationship("User", backref="Message")
     attachments: Mapped[List["Attachment"]] = relationship("Attachment", backref="Message")
@@ -199,26 +208,6 @@ class Attachment(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     creation_date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, default=datetime.datetime.now())
     url: Mapped[str] = mapped_column(String(512), nullable=False)
-    message_id: Mapped[int] = mapped_column(ForeignKey("Message.id"), nullable=False)
+    message_id: Mapped[int] = mapped_column(ForeignKey("Message.id", ondelete='CASCADE'), nullable=False)
     message: Mapped["Message"] = relationship("Message", backref="Attachment")
 
-
-"""
-class EmojiPack(Base):
-    __tablename__ = "EmojiPack"
-
-    serialize_only = ()
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    creation_date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, default=datetime.datetime.now())
-    name: Mapped[str] = mapped_column(String(256), nullable=False)
-
-
-class EmojiObject(Base):
-    __tablename__ = "EmojiObject"
-
-    serialize_only = ()
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    creation_date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, default=datetime.datetime.now())
-"""

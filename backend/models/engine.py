@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_scoped_session
 from sqlalchemy.orm import sessionmaker
 from contextlib import asynccontextmanager
 
@@ -25,7 +25,7 @@ engine = create_async_engine(DB_URL, pool_pre_ping=True, pool_recycle=3600, max_
 @asynccontextmanager
 async def db_session():
     # Async session maker
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = async_scoped_session(sessionmaker(engine, class_=AsyncSession, expire_on_commit=False))
     async with async_session() as session:
         try:
             yield session

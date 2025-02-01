@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 46640df5a1ce
+Revision ID: f5274c796143
 Revises: 
-Create Date: 2024-10-29 16:42:28.773889
+Create Date: 2025-02-01 15:45:55.163180
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '46640df5a1ce'
+revision: str = 'f5274c796143'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -42,14 +42,16 @@ def upgrade() -> None:
     sa.Column('second_name', sa.String(length=64), nullable=True),
     sa.Column('display_name', sa.String(length=128), nullable=True),
     sa.Column('password', sa.String(length=128), nullable=False),
-    sa.Column('profile_photo_url', sa.String(length=256), nullable=False),
-    sa.Column('background_photo_url', sa.String(length=256), nullable=False),
-    sa.Column('about_user', sa.Text(), nullable=True),
+    sa.Column('profile_photo', sa.String(length=256), nullable=False),
+    sa.Column('profile_photo_preview', sa.String(length=256), nullable=False),
+    sa.Column('background_photo', sa.String(length=256), nullable=False),
+    sa.Column('about', sa.Text(), nullable=True),
     sa.Column('phone', sa.String(length=16), nullable=True),
     sa.Column('city', sa.String(length=64), nullable=True),
     sa.Column('birthday', sa.Date(), nullable=False),
     sa.Column('creation_date', sa.DateTime(), nullable=False),
     sa.Column('is_confirmed', sa.Boolean(), nullable=False),
+    sa.Column('is_2fa_enabled', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('Category',
@@ -57,7 +59,7 @@ def upgrade() -> None:
     sa.Column('creation_date', sa.DateTime(), nullable=False),
     sa.Column('name', sa.String(length=256), nullable=False),
     sa.Column('server_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['server_id'], ['Server.id'], ),
+    sa.ForeignKeyConstraint(['server_id'], ['Server.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('Channel',
@@ -67,8 +69,8 @@ def upgrade() -> None:
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('server_id', sa.Integer(), nullable=True),
     sa.Column('type_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['server_id'], ['Server.id'], ),
-    sa.ForeignKeyConstraint(['type_id'], ['Type.id'], ),
+    sa.ForeignKeyConstraint(['server_id'], ['Server.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['type_id'], ['Type.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('Message',
@@ -77,10 +79,10 @@ def upgrade() -> None:
     sa.Column('edit_date', sa.DateTime(), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('is_edited', sa.Boolean(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('server_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['server_id'], ['Server.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['User.id'], ),
+    sa.ForeignKeyConstraint(['server_id'], ['Server.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['User.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('Role',
@@ -94,7 +96,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['server_id'], ['Server.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('Server_User',
+    op.create_table('ServerUser',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('server_id', sa.Integer(), nullable=True),
@@ -108,7 +110,14 @@ def upgrade() -> None:
     sa.Column('expires', sa.Integer(), nullable=True),
     sa.Column('creation_date', sa.DateTime(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['User.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['User.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('TwoFactorAuthentication',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('secret_key', sa.String(length=512), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['User.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('Attachment',
@@ -116,7 +125,7 @@ def upgrade() -> None:
     sa.Column('creation_date', sa.DateTime(), nullable=False),
     sa.Column('url', sa.String(length=512), nullable=False),
     sa.Column('message_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['message_id'], ['Message.id'], ),
+    sa.ForeignKeyConstraint(['message_id'], ['Message.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('Permission',
@@ -145,10 +154,10 @@ def upgrade() -> None:
     sa.Column('can_disable_earphones_users', sa.Boolean(), nullable=False),
     sa.Column('can_manipulate_users_voice', sa.Boolean(), nullable=False),
     sa.Column('is_admin', sa.Boolean(), nullable=False),
-    sa.ForeignKeyConstraint(['role_id'], ['Role.id'], ),
+    sa.ForeignKeyConstraint(['role_id'], ['Role.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('Role_User',
+    op.create_table('RoleUser',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('role_id', sa.Integer(), nullable=True),
@@ -161,11 +170,12 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('Role_User')
+    op.drop_table('RoleUser')
     op.drop_table('Permission')
     op.drop_table('Attachment')
+    op.drop_table('TwoFactorAuthentication')
     op.drop_table('Session')
-    op.drop_table('Server_User')
+    op.drop_table('ServerUser')
     op.drop_table('Role')
     op.drop_table('Message')
     op.drop_table('Channel')

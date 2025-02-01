@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_user, login_required, logout_user, current_user
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
+from sqlalchemy import select
 from werkzeug import Response
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -28,7 +29,7 @@ async def login() -> Response | str:
         email = request.form.get('email')
         password = request.form.get('password')
         remember = True if request.form.get('remember') else False
-        with db_session() as db:
+        async with db_session() as db:
             user = db.query(User).filter_by(email=email).first()
 
         if not user or not check_password_hash(user.password, password):  # check password hashes
@@ -62,19 +63,19 @@ async def signup() -> Response | str:  # basic sing up function
     birthday = request.form.get('birthday')
     password = request.form.get('password')
     async with db_session() as db:
-        user = await db.query(User).filter_by(
-            email=email).first()
+        user = await db.execute(select(User).filter_by(
+            email=email))
+        user = user.scalars().first()
     if user:  # check for user exist
         flash('Email address already exists', "error")
         return redirect('/login')
     # create a db cortege if user isnt exists
-    new_user = User(email=email,
+    db.add(User(email=email,
                     display_name=display_name,
                     birthday=datetime.strptime(birthday, "%Y-%m-%d"),
                     username=username,
-                    password=generate_password_hash(password, method='pbkdf2:sha256'))
-    await db.add(new_user)
-    await db.commit()
+                    password=generate_password_hash(password, method='pbkdf2:sha256')))
+    db.commit()
     token = generate_token(email)
     html = render_template("confirm.html", confirm_url=f'{config["BASE_URL"]}/confirm?token={token}')
     msg = Message(
@@ -99,12 +100,13 @@ async def confirm_email() -> Response:
         return response
     email = confirm_token(token)
     async with db_session() as db:
-        user = db.query(User).filter_by(email=current_user.email).first_or_404()
+        user = await db.execute(select(User).filter_by(email=current_user.email))
+        user = user.scalars().first()
         if user.email == email:
             user.is_confirmed = True
             user.confirmed_on = datetime.now()
-            await db.add(user)
-            await db.commit()
+            db.add(user)
+            db.commit()
             response = jsonify({"message": "Successfully confirmed"})
             response.status = 200
         else:
