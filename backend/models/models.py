@@ -26,7 +26,7 @@ class User(Base, UserMixin):
     display_name: Mapped[str] = mapped_column(String(128), nullable=True)
     password: Mapped[str] = mapped_column(String(128), nullable=False)
     profile_photo: Mapped[str] = mapped_column(String(256), nullable=False)
-    profile_photo_preview: Mapped[str] = mapped_column(String(256), nullable=False)
+    profile_photo_preview: Mapped[str] = mapped_column(String(256), nullable=True)
     background_photo: Mapped[str] = mapped_column(String(256), nullable=False)
     about: Mapped[str] = mapped_column(Text, nullable=True)
     phone: Mapped[str] = mapped_column(String(16), nullable=True)
