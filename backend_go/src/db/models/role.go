@@ -14,7 +14,6 @@ type Role struct {
 	IsDisplayable bool       `gorm:"type:boolean;not null;default:True"`
 	IsTaggable    bool       `gorm:"type:boolean;not null;default:False"`
 	ServerID      uint64     `gorm:"type:bigint;not null"`
-	Server        Server     `gorm:"foreignKey:ServerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Permission    Permission `gorm:"foreignKey:RoleID;OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Users         []User     `gorm:"many2many:role_users;"`
 }
